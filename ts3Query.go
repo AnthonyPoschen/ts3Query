@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 )
 
@@ -66,6 +67,46 @@ func escapeString(input string) string {
 	return result
 }
 
+// use what this function solves as a programming test in the future if needed :D
+func unEscapeString(input string) (result string) {
+
+	var prev string
+	var skip bool
+	var last string
+
+	for i, str := range input {
+		// if we just started skip doing stuff and pre load
+		if i == 0 {
+			prev = string(str)
+			continue
+		}
+		// if we decided to skip then shuffle the values down and skip this iteration
+		if skip {
+			prev = string(str)
+			last = prev
+			skip = false
+			continue
+		}
+		// loop to check for a pattern match
+		for k, v := range unescapeTable {
+			// combine the previous rune with the current and see if it matches the pattern
+			if (prev + string(str)) == k {
+				// set the previous to the unescaped version
+				prev = string(v)
+				// set skip so we ignore this str and it wont be saved
+				skip = true
+				break
+			}
+		}
+
+		result += prev
+		prev = string(str)
+		last = string(str)
+	}
+	result += last
+	return
+}
+
 func getError(ts3Msg string) error {
 	s := strings.Split(ts3Msg, "error ")
 	l := len(s)
@@ -84,15 +125,24 @@ func getError(ts3Msg string) error {
 
 func (t *Ts3Query) readResponse() (res string, err error) {
 
+	reg := regexp.MustCompile("error id=[0-9]* msg=")
 	for {
+
 		n, err := t.rw.Read(t.b)
 		if err != nil {
 			break
 		}
 		if n != 0 {
-			res = string(t.b[0:n])
-			break
+			res += string(t.b[0:n])
+			if reg.Match([]byte(res)) {
+				break
+			}
 		}
 	}
 	return
+}
+
+func (t *Ts3Query) sendMessage(msg string) error {
+	_, err := t.rw.Write([]byte(msg + "\n"))
+	return err
 }

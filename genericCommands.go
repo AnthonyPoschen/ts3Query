@@ -2,7 +2,7 @@ package ts3Query
 
 // Help sends to the writer the help command with the command supplied added to the end
 func (t *Ts3Query) Help(command string) (response string, err error) {
-	_, err = t.rw.Write([]byte("help " + escapeString(command)))
+	err = t.sendMessage("help " + escapeString(command))
 	if err != nil {
 		return "", err
 	}
@@ -13,7 +13,7 @@ func (t *Ts3Query) Help(command string) (response string, err error) {
 // Use allows the query to direct commands to a specific server,
 // it must be done before any specific server commands can be done
 func (t *Ts3Query) Use(virtualServerID string) error {
-	_, err := t.rw.Write([]byte("use " + escapeString(virtualServerID)))
+	err := t.sendMessage("use " + escapeString(virtualServerID))
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (t *Ts3Query) Use(virtualServerID string) error {
 
 // Login takes a username and a password for the teamspeak server. It format's the input and writes it to the writer
 func (t *Ts3Query) Login(username, password string) error {
-	_, err := t.rw.Write([]byte("login " + escapeString(username) + " " + escapeString(password) + "\n"))
+	err := t.sendMessage("login " + escapeString(username) + " " + escapeString(password))
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (t *Ts3Query) Login(username, password string) error {
 
 // Logout writes the logout command to the writer
 func (t *Ts3Query) Logout() error {
-	_, err := t.rw.Write([]byte("logout"))
+	err := t.sendMessage("logout")
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (t *Ts3Query) Logout() error {
 
 // Quit will write the command to quit the session
 func (t *Ts3Query) Quit() error {
-	_, err := t.rw.Write([]byte("quit"))
+	err := t.sendMessage("quit")
 	if err != nil {
 		return err
 	}
