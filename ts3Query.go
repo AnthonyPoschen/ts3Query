@@ -7,6 +7,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -38,13 +39,17 @@ var (
 
 // Ts3Query is the main object which contains all the features
 type Ts3Query struct {
-	rw io.ReadWriter
-	b  []byte
+	rw    io.ReadWriter
+	b     []byte
+	delay time.Duration
 }
 
 // New returns an instance of ts3Query
-func New(rw io.ReadWriter) Ts3Query {
-	return Ts3Query{rw: rw, b: make([]byte, 1024*1024)}
+//
+// By default teamspeak will only allow 10 commands every 3 seconds from external IP's.
+// so make sure to set the delay to over 300ms to avoid being banned for flooding.
+func New(rw io.ReadWriter, delay time.Duration) Ts3Query {
+	return Ts3Query{rw: rw, b: make([]byte, 1024*1024), delay: delay}
 }
 
 // escapesString escapes the input to be sent to the ts3 client.
@@ -115,10 +120,12 @@ func getError(ts3Msg string) error {
 	m := make(map[string]string)
 	for _, v := range items {
 		x := strings.Split(v, "=")
-		m[x[0]] = x[1]
+		if len(x) >= 2 {
+			m[x[0]] = x[1]
+		}
 	}
 	if m["id"] != "0" {
-		return fmt.Errorf("%s", m["msg"])
+		return fmt.Errorf("ID:%s msg:%s", m["id"], unEscapeString(m["msg"]))
 	}
 	return nil
 }
@@ -143,6 +150,7 @@ func (t *Ts3Query) readResponse() (res string, err error) {
 }
 
 func (t *Ts3Query) sendMessage(msg string) error {
+	<-time.After(t.delay)
 	_, err := t.rw.Write([]byte(msg + "\n"))
 	return err
 }
