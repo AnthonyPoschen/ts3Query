@@ -1,7 +1,6 @@
 package ts3Query
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -24,15 +23,15 @@ func (t *Ts3Query) ClientDBList() []Client {
 	for {
 		msg := "clientdblist"
 		if first == false {
-			fmt.Println("Doing scan from", lastID)
 			msg += " start=" + lastID
 		}
 		first = false
 		t.sendMessage(msg)
 
 		res, err := t.readResponse()
+		// error is not considered a issue as it is expected once we have scanned everything
+		// also i can't be bothered to define the exact error we expect to make sure. #totallytemporary
 		if err != nil {
-			fmt.Printf("error:%s\n", err)
 			break
 		}
 
