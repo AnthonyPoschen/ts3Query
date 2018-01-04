@@ -1,6 +1,7 @@
 package ts3Query
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -66,4 +67,46 @@ func (t *Ts3Query) ClientDBList() []Client {
 	}
 
 	return ClientList
+}
+
+//ClientList gets a list of clients currently connected to the server
+func (t *Ts3Query) ClientList() ([]Client, error) {
+
+	var ClientList []Client
+
+	msg := "clientlist -uid"
+
+	fmt.Println(msg)
+
+	t.sendMessage(msg)
+
+	res, err := t.readResponse()
+	if err != nil {
+		return nil, err
+	}
+
+	err = getError(res)
+	if err != nil {
+		return nil, err
+	}
+
+	groups := strings.Split(res, "|")
+	for _, v := range groups {
+		items := strings.Split(v, " ")
+		m := make(map[string]string)
+		for _, item := range items {
+			i := strings.SplitN(item, "=", 2)
+			if len(i) <= 1 {
+				break
+			}
+			//fmt.Printf("1: %s\n2: %s\n", i[0], i[1])
+			m[i[0]] = i[1]
+		}
+
+		if _, ok := m["client_database_id"]; ok {
+			ClientList = append(ClientList, Client{DBID: m["client_database_id"], UUID: m["client_unique_identifier"], Name: unEscapeString(m["client_nickname"])})
+		}
+	}
+
+	return ClientList, err
 }
